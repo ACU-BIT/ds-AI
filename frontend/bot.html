@@ -1,0 +1,313 @@
+
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>بوت تليجرام — TeleDesk</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body data-page="bot">
+<main>
+
+  <div class="head">
+    <div>
+      <h1>بوت تليجرام</h1>
+      <p>اربط بوتك، جرّبه، وبعدين شغّله.</p>
+    </div>
+
+    <div class="row">
+      <button class="btn" id="toggleBtn" onclick="toggleBot()">
+        تشغيل / إيقاف البوت
+      </button>
+
+      <button class="btn d" onclick="disconnectBot()">
+        فصل البوت
+      </button>
+    </div>
+  </div>
+
+  <p class="row" style="margin-bottom:16px">
+    <span class="tag">✓ إنشاء البوت</span>
+    <span class="tag b">2 ربط المفتاح</span>
+    <span class="tag" style="background:#eef2f7;color:var(--mut)">
+      3 التجربة والتشغيل
+    </span>
+  </p>
+
+  <div class="g2">
+
+    <!-- ربط البوت -->
+    <div class="card">
+      <h2>اربط بوت تليجرام</h2>
+
+      <p class="mut">
+        افتح @BotFather في تليجرام، ابعت /newbot،
+        وانسخ المفتاح اللي هيرجعلك.
+      </p>
+
+      <label for="tk">مفتاح البوت (Token)</label>
+
+      <input
+        id="tk"
+        dir="ltr"
+        autocomplete="off"
+        placeholder="123456789:AAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      >
+
+      <p id="msg" style="min-height:24px"></p>
+
+      <div class="row">
+        <button class="btn p" id="connectBtn" onclick="connect()">
+          تحقق واربط
+        </button>
+
+        <a class="btn"
+           href="https://t.me/BotFather"
+           target="_blank"
+           rel="noopener noreferrer">
+          فين ألاقي المفتاح؟
+        </a>
+      </div>
+
+      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+
+      <h3>حالة البوت</h3>
+      <p id="botStatus" class="mut">جاري تحميل حالة البوت...</p>
+      <p id="botLink"></p>
+
+      <p class="mut">
+        بعد الربط هتقدر تشارك رابط البوت مع عملاءك
+        وتتحكم في تشغيله وإيقافه.
+      </p>
+    </div>
+
+    <!-- اختبار البوت -->
+    <div class="card">
+      <div class="row sp">
+        <h2>جرّب قبل التشغيل</h2>
+        <span class="mut">من ملفاتك</span>
+      </div>
+
+      <div class="chat" id="chatBox">
+        <div class="bub">
+          اكتب سؤالًا علشان تختبر رد البوت من بيانات شركتك.
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <input
+          id="question"
+          placeholder="اكتب سؤال عميل..."
+          aria-label="سؤال العميل"
+        >
+
+        <button class="btn p" id="sendBtn" onclick="ask()">
+          إرسال
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/layout.js"></script>
+
+<script>
+'use strict';
+
+const tk = document.getElementById('tk');
+const msg = document.getElementById('msg');
+const question = document.getElementById('question');
+const chatBox = document.getElementById('chatBox');
+const botStatus = document.getElementById('botStatus');
+const botLink = document.getElementById('botLink');
+const connectBtn = document.getElementById('connectBtn');
+const sendBtn = document.getElementById('sendBtn');
+const toggleBtn = document.getElementById('toggleBtn');
+
+function showMessage(text, success = false) {
+  msg.textContent = text;
+  msg.style.color = success ? 'var(--g)' : 'var(--r)';
+}
+
+function addBubble(text, type = '') {
+  const bubble = document.createElement('div');
+  bubble.className = 'bub' + (type ? ' ' + type : '');
+  bubble.textContent = text;
+  chatBox.appendChild(bubble);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  return bubble;
+}
+
+// تحميل حالة البوت
+async function loadBot() {
+  try {
+    const result = await API.bot();
+    const bot = result.bot;
+
+    if (!bot) {
+      botStatus.textContent = 'لا يوجد بوت مربوط حاليًا.';
+      botLink.textContent = '';
+      toggleBtn.disabled = true;
+      return;
+    }
+
+    botStatus.textContent =
+      'البوت: @' + bot.username +
+      ' — ' + (bot.active ? 'يعمل' : 'متوقف مؤقتًا') +
+      ' — ' + (bot.connected ? 'متصل بتليجرام' : 'غير متصل بـ Webhook');
+
+    botLink.textContent = bot.username
+      ? 'رابط البوت: https://' + bot.link
+      : '';
+
+    toggleBtn.disabled = false;
+
+    toggleBtn.textContent = bot.active
+      ? 'إيقاف مؤقت'
+      : 'تشغيل البوت';
+
+  } catch (error) {
+    botStatus.textContent = error.message;
+  }
+}
+
+// ربط البوت
+async function connect() {
+  const value = tk.value.trim();
+
+  if (!/^\d+:[\w-]{30,}$/.test(value)) {
+    showMessage('المفتاح غير صحيح. راجعه مع BotFather.');
+    return;
+  }
+
+  connectBtn.disabled = true;
+  connectBtn.textContent = 'جاري الربط...';
+
+  try {
+    const result = await API.connectBot(value);
+
+    if (result.warning) {
+      showMessage(result.warning, false);
+    } else {
+      showMessage('تم ربط البوت بنجاح.', true);
+    }
+
+    tk.value = '';
+    await loadBot();
+
+  } catch (error) {
+    showMessage(error.message || 'فشل ربط البوت.');
+  } finally {
+    connectBtn.disabled = false;
+    connectBtn.textContent = 'تحقق واربط';
+  }
+}
+
+// اختبار البوت
+async function ask() {
+  const text = question.value.trim();
+
+  if (!text) {
+    question.focus();
+    return;
+  }
+
+  question.disabled = true;
+  sendBtn.disabled = true;
+
+  addBubble(text, 'u');
+
+  const answerBubble = addBubble('جاري تجهيز الرد...');
+
+  question.value = '';
+
+  try {
+    const result = await API.testBot({
+      question: text
+    });
+
+    answerBubble.textContent =
+      result.answer || 'لم يتم العثور على رد.';
+
+    if (result.source) {
+      const source = document.createElement('small');
+      source.textContent = 'المصدر: ' + result.source;
+      answerBubble.appendChild(source);
+    }
+
+    if (result.needs_human) {
+      const note = document.createElement('small');
+      note.textContent = 'قد تحتاج المحادثة إلى موظف.';
+      answerBubble.appendChild(note);
+    }
+
+  } catch (error) {
+    answerBubble.textContent =
+      'تعذر الحصول على الرد: ' + error.message;
+  } finally {
+    question.disabled = false;
+    sendBtn.disabled = false;
+    question.focus();
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+}
+
+// تشغيل أو إيقاف البوت
+async function toggleBot() {
+  toggleBtn.disabled = true;
+
+  try {
+    const result = await API.toggleBot();
+
+    alert(
+      result.active
+        ? 'تم تشغيل البوت بنجاح.'
+        : 'تم إيقاف البوت مؤقتًا.'
+    );
+
+    await loadBot();
+
+  } catch (error) {
+    alert(error.message || 'تعذر تغيير حالة البوت.');
+  } finally {
+    toggleBtn.disabled = false;
+  }
+}
+
+// فصل البوت
+async function disconnectBot() {
+  const confirmed = confirm(
+    'هل أنت متأكد أنك تريد فصل البوت؟'
+  );
+
+  if (!confirmed) return;
+
+  try {
+    await API.disconnectBot();
+
+    showMessage('تم فصل البوت.', true);
+    await loadBot();
+
+  } catch (error) {
+    showMessage(error.message || 'تعذر فصل البوت.');
+  }
+}
+
+// إرسال السؤال بزر Enter
+question.addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    ask();
+  }
+});
+
+// بدء تحميل الحالة
+loadBot();
+</script>
+
+</body>
+</html>

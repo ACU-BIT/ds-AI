@@ -1,0 +1,18 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>قاعدة المعرفة — TeleDesk</title><link rel="stylesheet" href="css/style.css"></head><body data-page="knowledge"><main>
+<div class="head"><div><h1>قاعدة المعرفة</h1><p>كل اللي البوت بيعرفه عن شركتك. أي تعديل بيظهر في الردود خلال دقايق.</p></div><div class="row"><button class="btn" onclick="addRow(prompt('اكتب عنوان المعلومة'),'نص','—')">اكتب معلومة</button><button class="btn p" onclick="pick.click()">رفع ملف</button></div></div>
+<div class="g4"><div class="card stat"><small>ملفات جاهزة</small><b>12</b></div><div class="card stat"><small>جاري المعالجة</small><b>1</b></div><div class="card stat"><small>فشلت</small><b>1</b></div><div class="card stat"><small>المساحة المستخدمة</small><b>48 ميجا</b><small>من 500 ميجا</small></div></div>
+<div class="drop row sp" id="drop"><span><b>اسحب الملفات هنا</b> PDF أو Word أو نص، حتى 10 ميجا للملف</span><button class="btn" onclick="pick.click()">اختر من جهازك</button></div><input type="file" id="pick" hidden multiple accept=".pdf,.docx,.txt">
+<div class="card" style="padding:0"><table id="t"><tr><th>الملف</th><th>النوع</th><th>الحجم</th><th>آخر تحديث</th><th>الحالة</th><th>استُخدم في</th><th></th></tr>
+<tr><td><b>قائمة الأسعار 2026</b></td><td>PDF</td><td>1.2 MB</td><td>اليوم 09:14</td><td><span class="tag">جاهز</span></td><td>214 رد</td><td><a class="btn d" onclick="del(this)">حذف</a></td></tr>
+<tr><td><b>سياسة الإرجاع والاستبدال</b></td><td>DOCX</td><td>86 KB</td><td>أمس</td><td><span class="tag">جاهز</span></td><td>167 رد</td><td><a class="btn d" onclick="del(this)">حذف</a></td></tr>
+<tr><td><b>الأسئلة الشائعة</b></td><td>نص</td><td>4 KB</td><td>قبل 3 أيام</td><td><span class="tag">جاهز</span></td><td>389 رد</td><td><a class="btn d" onclick="del(this)">حذف</a></td></tr>
+<tr><td><b>كتالوج المنتجات</b></td><td>PDF</td><td>8.4 MB</td><td>اليوم 09:20</td><td><span class="tag a">جاري المعالجة</span></td><td>—</td><td><a class="btn d" onclick="del(this)">حذف</a></td></tr>
+<tr style="background:#fff5f5"><td><b>عقد قديم (مسح ضوئي)</b></td><td>PDF</td><td>3.1 MB</td><td>قبل أسبوع</td><td><span class="tag r">فشل: صور بدون نص</span></td><td>—</td><td><a class="btn d" onclick="del(this)">حذف</a></td></tr></table></div>
+<p class="mut" style="margin-top:12px">الملفات الممسوحة ضوئيا محتاجة نص قابل للقراءة. لو الملف فشل، ارفع نسخة نصية أو اكتب المحتوى مباشرة.</p>
+</main><script src="js/api.js"></script><script src="js/layout.js"></script><script>
+const t=document.getElementById('t');
+function addRow(n,ty,sz){if(!n)return;t.insertAdjacentHTML('beforeend',`<tr><td><b>${n.replace(/</g,'&lt;')}</b></td><td>${ty}</td><td>${sz}</td><td>الآن</td><td><span class="tag a">جاري المعالجة</span></td><td>—</td><td><a class="btn d" onclick="del(this)">حذف</a></td></tr>`)}
+function del(a){if(confirm('تحذف الملف ده؟ البوت مش هيرد منه بعد كده.'))a.closest('tr').remove()}
+function add(files){[...files].forEach(f=>{if(f.size>10*1048576)return alert(f.name+' أكبر من 10 ميجا');addRow(f.name,f.name.split('.').pop().toUpperCase(),(f.size/1048576).toFixed(1)+' MB');/* API.upload(f) */})}
+pick.onchange=e=>add(e.target.files);drop.ondragover=e=>e.preventDefault();drop.ondrop=e=>{e.preventDefault();add(e.dataTransfer.files)};
+</script></body></html>

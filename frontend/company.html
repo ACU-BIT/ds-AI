@@ -1,0 +1,306 @@
+
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ملف الشركة — TeleDesk</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body data-page="company">
+<main>
+
+  <div class="head">
+    <div>
+      <h1>ملف الشركة</h1>
+      <p>خلّي البوت يعرف شركتك ويتكلم بالنبرة اللي تناسبك.</p>
+    </div>
+  </div>
+
+  <div class="g2" style="grid-template-columns:2fr 1fr;align-items:start">
+
+    <div>
+
+      <!-- بيانات الشركة -->
+      <div class="card" style="margin-bottom:16px">
+        <h2>بيانات الشركة</h2>
+
+        <div class="g2">
+          <div>
+            <label for="companyName">اسم الشركة</label>
+            <input id="companyName" maxlength="150">
+          </div>
+
+          <div>
+            <label for="industry">النشاط</label>
+            <input id="industry" maxlength="150">
+          </div>
+        </div>
+
+        <label for="description">وصف مختصر</label>
+        <textarea id="description" rows="3" maxlength="3000"></textarea>
+      </div>
+
+      <!-- أسلوب الرد -->
+      <div class="card" style="margin-bottom:16px">
+        <h2>أسلوب الرد</h2>
+
+        <label for="welcome">رسالة الترحيب</label>
+        <input id="welcome" maxlength="1000" oninput="pv()">
+
+        <label>النبرة</label>
+
+        <div class="g3">
+          <div class="card tone on" data-tone="friendly" onclick="selectTone(this)">
+            <b>ودود</b><br>
+            <span class="mut">بسيط ودافئ</span>
+          </div>
+
+          <div class="card tone" data-tone="professional" onclick="selectTone(this)">
+            <b>احترافي</b><br>
+            <span class="mut">مباشر وواضح</span>
+          </div>
+
+          <div class="card tone" data-tone="formal" onclick="selectTone(this)">
+            <b>رسمي</b><br>
+            <span class="mut">مهذب ورسمي</span>
+          </div>
+        </div>
+
+        <label for="replyLanguage">لغة الرد</label>
+        <select id="replyLanguage">
+          <option value="auto">نفس لغة العميل (تلقائي)</option>
+          <option value="ar">عربي</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+
+      <!-- التحويل لموظف -->
+      <div class="card">
+        <h2>متى يحوّل البوت لموظف؟</h2>
+
+        <label class="row" style="font-weight:400">
+          <input type="checkbox" id="handoffRequest" checked style="width:auto">
+          العميل طلب موظف صراحة
+        </label>
+
+        <label class="row" style="font-weight:400">
+          <input type="checkbox" id="handoffOutOfScope" checked style="width:auto">
+          السؤال خارج ملفات الشركة
+        </label>
+
+        <label for="handoffKeywords">كلمات تستدعي موظفًا</label>
+        <input
+          id="handoffKeywords"
+          placeholder="شكوى، استرداد، مكسور"
+          maxlength="1000"
+        >
+
+        <label class="row" style="font-weight:400">
+          <input type="checkbox" id="handoffAfterTwo" style="width:auto">
+          بعد رسالتين متتاليتين من غير إجابة
+        </label>
+
+        <label for="workHours">ساعات عمل الفريق</label>
+        <input id="workHours" maxlength="200">
+      </div>
+
+      <p class="row" style="margin-top:16px">
+        <button class="btn p" id="saveBtn" onclick="save()">
+          حفظ التغييرات
+        </button>
+
+        <button class="btn" onclick="loadCompany()">
+          إعادة تحميل البيانات
+        </button>
+
+        <span id="ok" class="mut"></span>
+      </p>
+
+    </div>
+
+    <!-- المعاينة -->
+    <div class="card">
+      <div class="row sp">
+        <h2>معاينة</h2>
+        <span class="tag b" id="toneName">نبرة: ودود</span>
+      </div>
+
+      <div class="chat">
+        <div class="bub" id="previewWelcome">
+          أهلا بيك! تحب أساعدك في إيه؟
+        </div>
+
+        <div class="bub u">
+          ممكن تساعدني؟
+        </div>
+
+        <div class="bub" id="previewReply">
+          أكيد! يسعدني أساعدك.
+        </div>
+      </div>
+
+      <p class="mut">
+        دي معاينة شكلية للرسائل وليست ردًا فعليًا من البوت.
+      </p>
+    </div>
+
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/layout.js"></script>
+
+<script>
+'use strict';
+
+const $ = id => document.getElementById(id);
+
+let tone = 'friendly';
+
+const toneLabels = {
+  friendly: 'ودود',
+  professional: 'احترافي',
+  formal: 'رسمي'
+};
+
+const toneReplies = {
+  friendly: 'أكيد! يسعدني أساعدك.',
+  professional: 'بالتأكيد، كيف يمكنني مساعدتك؟',
+  formal: 'بالطبع، يشرفني تقديم المساعدة.'
+};
+
+// اختيار النبرة
+function selectTone(element) {
+  document.querySelectorAll('.tone').forEach(el => {
+    el.classList.remove('on');
+  });
+
+  element.classList.add('on');
+  tone = element.dataset.tone;
+
+  pv();
+}
+
+// تحديث المعاينة
+function pv() {
+  $('previewWelcome').textContent =
+    $('welcome').value || 'أهلا بيك! تحب أساعدك في إيه؟';
+
+  $('previewReply').textContent = toneReplies[tone];
+
+  $('toneName').textContent =
+    'نبرة: ' + toneLabels[tone];
+}
+
+// عرض رسالة
+function showStatus(message, success = false) {
+  $('ok').textContent = message;
+  $('ok').style.color = success ? 'var(--g)' : 'var(--r)';
+}
+
+// تحميل بيانات الشركة
+async function loadCompany() {
+  const btn = $('saveBtn');
+  btn.disabled = true;
+
+  showStatus('جاري تحميل البيانات...');
+
+  try {
+    const data = await API.company();
+
+    $('companyName').value = data.name || '';
+    $('industry').value = data.industry || '';
+    $('description').value = data.description || '';
+    $('welcome').value = data.welcome || '';
+
+    tone = ['friendly', 'professional', 'formal'].includes(data.tone)
+      ? data.tone
+      : 'friendly';
+
+    document.querySelectorAll('.tone').forEach(el => {
+      el.classList.toggle('on', el.dataset.tone === tone);
+    });
+
+    $('replyLanguage').value = data.reply_language || 'auto';
+
+    $('handoffRequest').checked =
+      data.handoff_on_request ?? true;
+
+    $('handoffOutOfScope').checked =
+      data.handoff_out_of_scope ?? true;
+
+    $('handoffKeywords').value =
+      data.handoff_keywords || '';
+
+    $('handoffAfterTwo').checked =
+      data.handoff_after_two ?? false;
+
+    $('workHours').value =
+      data.work_hours || '';
+
+    pv();
+    showStatus('تم تحميل بيانات الشركة.', true);
+
+  } catch (error) {
+    showStatus('تعذر تحميل البيانات: ' + error.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// حفظ بيانات الشركة
+async function save() {
+  const btn = $('saveBtn');
+
+  const data = {
+    name: $('companyName').value.trim(),
+    industry: $('industry').value.trim(),
+    description: $('description').value.trim(),
+    welcome: $('welcome').value.trim(),
+
+    tone: tone,
+
+    reply_language: $('replyLanguage').value,
+
+    handoff_on_request: $('handoffRequest').checked,
+    handoff_out_of_scope: $('handoffOutOfScope').checked,
+    handoff_keywords: $('handoffKeywords').value.trim(),
+    handoff_after_two: $('handoffAfterTwo').checked,
+
+    work_hours: $('workHours').value.trim()
+  };
+
+  if (!data.name) {
+    showStatus('اكتب اسم الشركة أولًا.');
+    $('companyName').focus();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'جاري الحفظ...';
+
+  try {
+    await API.saveCompany(data);
+
+    showStatus('تم حفظ بيانات الشركة بنجاح.', true);
+
+  } catch (error) {
+    showStatus('فشل الحفظ: ' + error.message);
+
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'حفظ التغييرات';
+  }
+}
+
+// معاينة الترحيب أثناء الكتابة
+$('welcome').addEventListener('input', pv);
+
+// تحميل البيانات عند فتح الصفحة
+loadCompany();
+</script>
+
+</body>
+</html>

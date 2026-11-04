@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+sqlalchemy>=2.0
+psycopg2-binary
+pgvector
+celery
+redis
+python-multipart
+pydantic-settings
+pypdf
+python-docx
+boto3
+cryptography
+google-genai
+httpx
+pyjwt
